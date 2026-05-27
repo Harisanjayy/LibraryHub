@@ -1,0 +1,258 @@
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+using namespace std;
+
+class Student {
+private:
+    int rollNo;
+    char name[50];
+    float marks;
+
+public:
+
+   
+    void addStudent() {
+
+        cout << "\nEnter Roll Number: ";
+        cin >> rollNo;
+
+        cin.ignore();
+
+        cout << "Enter Student Name: ";
+        cin.getline(name, 50);
+
+        cout << "Enter Marks: ";
+        cin >> marks;
+    }
+
+  
+    void displayStudent() const {
+
+        cout << "\nRoll Number : " << rollNo;
+        cout << "\nName        : " << name;
+        cout << "\nMarks       : " << marks << endl;
+    }
+
+
+    int getRollNo() const {
+        return rollNo;
+    }
+
+  
+    void writeToFile() {
+
+        ofstream file("students.dat",
+                      ios::binary | ios::app);
+
+        file.write(reinterpret_cast<char*>(this),
+                   sizeof(*this));
+
+        file.close();
+    }
+
+    
+    static void displayAllStudents() {
+
+        ifstream file("students.dat", ios::binary);
+
+        Student s;
+
+        cout << "\n========== STUDENT RECORDS ==========\n";
+
+        while (file.read(reinterpret_cast<char*>(&s),
+                         sizeof(s))) {
+
+            s.displayStudent();
+
+            cout << "----------------------------------\n";
+        }
+
+        file.close();
+    }
+
+  
+    static bool searchStudent(int rno, Student &s) {
+
+        ifstream file("students.dat", ios::binary);
+
+        while (file.read(reinterpret_cast<char*>(&s),
+                         sizeof(s))) {
+
+            if (s.rollNo == rno) {
+                file.close();
+                return true;
+            }
+        }
+
+        file.close();
+        return false;
+    }
+
+   
+    static void updateStudent(int rno) {
+
+        fstream file("students.dat",
+                     ios::binary | ios::in | ios::out);
+
+        Student s;
+
+        bool found = false;
+
+        while (file.read(reinterpret_cast<char*>(&s),
+                         sizeof(s))) {
+
+            if (s.rollNo == rno) {
+
+                cout << "\nEnter New Details:\n";
+
+                s.addStudent();
+
+                int position =
+                    (-1) * static_cast<int>(sizeof(s));
+
+                file.seekp(position, ios::cur);
+
+                file.write(reinterpret_cast<char*>(&s),
+                           sizeof(s));
+
+                found = true;
+
+                cout << "\nRecord Updated Successfully!\n";
+
+                break;
+            }
+        }
+
+        if (!found) {
+            cout << "\nStudent Record Not Found!\n";
+        }
+
+        file.close();
+    }
+
+  
+    static void deleteStudent(int rno) {
+
+        ifstream file("students.dat", ios::binary);
+
+        ofstream temp("temp.dat", ios::binary);
+
+        Student s;
+
+        bool found = false;
+
+        while (file.read(reinterpret_cast<char*>(&s),
+                         sizeof(s))) {
+
+            if (s.rollNo != rno) {
+
+                temp.write(reinterpret_cast<char*>(&s),
+                           sizeof(s));
+            }
+            else {
+                found = true;
+            }
+        }
+
+        file.close();
+        temp.close();
+
+        remove("students.dat");
+        rename("temp.dat", "students.dat");
+
+        if (found)
+            cout << "\nRecord Deleted Successfully!\n";
+        else
+            cout << "\nStudent Record Not Found!\n";
+    }
+};
+
+int main() {
+
+    int choice;
+    int roll;
+
+    Student s;
+
+    do {
+
+        cout << "\n========== STUDENT MANAGEMENT SYSTEM ==========\n";
+
+        cout << "1. Add Student\n";
+        cout << "2. Display All Students\n";
+        cout << "3. Search Student\n";
+        cout << "4. Update Student\n";
+        cout << "5. Delete Student\n";
+        cout << "6. Exit\n";
+
+        cout << "\nEnter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+
+        case 1:
+
+            s.addStudent();
+            s.writeToFile();
+
+            cout << "\nStudent Added Successfully!\n";
+
+            break;
+
+        case 2:
+
+            Student::displayAllStudents();
+
+            break;
+
+        case 3:
+
+            cout << "\nEnter Roll Number to Search: ";
+            cin >> roll;
+
+            if (Student::searchStudent(roll, s)) {
+
+                cout << "\nStudent Found!\n";
+
+                s.displayStudent();
+            }
+            else {
+                cout << "\nStudent Not Found!\n";
+            }
+
+            break;
+
+        case 4:
+
+            cout << "\nEnter Roll Number to Update: ";
+            cin >> roll;
+
+            Student::updateStudent(roll);
+
+            break;
+
+        case 5:
+
+            cout << "\nEnter Roll Number to Delete: ";
+            cin >> roll;
+
+            Student::deleteStudent(roll);
+
+            break;
+
+        case 6:
+
+            cout << "\nThank You!\n";
+
+            break;
+
+        default:
+
+            cout << "\nInvalid Choice!\n";
+        }
+
+    } while (choice != 6);
+
+    return 0;
+}
